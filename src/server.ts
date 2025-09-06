@@ -38,7 +38,14 @@ app.get('/health', (_req: Request, res: Response) => {
 // Test BFL API connectivity
 app.get('/test-bfl', async (_req: Request, res: Response) => {
   try {
-    const bflApiKey = process.env.BFL_API_KEY || 'c437e6fb-d7e2-4953-b238-44fe1656ca02';
+    const bflApiKey = process.env.BFL_API_KEY;
+    
+    if (!bflApiKey) {
+      return res.status(500).json({
+        error: 'BFL_API_KEY environment variable is required',
+        status: 'error'
+      });
+    }
     
     console.log('🧪 Testing BFL API connectivity...');
     console.log('🔑 API Key present:', !!bflApiKey);
@@ -67,7 +74,7 @@ app.get('/test-bfl', async (_req: Request, res: Response) => {
     
     const responseText = await response.text();
     
-    res.json({
+    return res.json({
       status: response.ok ? 'success' : 'error',
       statusCode: response.status,
       statusText: response.statusText,
@@ -84,7 +91,7 @@ app.get('/test-bfl', async (_req: Request, res: Response) => {
     
   } catch (error) {
     console.error('❌ BFL API test failed:', error);
-    res.status(500).json({
+    return res.status(500).json({
       status: 'error',
       error: error instanceof Error ? error.message : 'Unknown error',
       apiKeyPresent: !!process.env.BFL_API_KEY,
@@ -97,7 +104,14 @@ app.get('/test-bfl', async (_req: Request, res: Response) => {
 app.get('/api/poll-image/:requestId', async (req: Request, res: Response) => {
   try {
     const { requestId } = req.params;
-    const bflApiKey = process.env.BFL_API_KEY || 'c437e6fb-d7e2-4953-b238-44fe1656ca02';
+    const bflApiKey = process.env.BFL_API_KEY;
+    
+    if (!bflApiKey) {
+      return res.status(500).json({
+        error: 'BFL_API_KEY environment variable is required',
+        status: 'error'
+      });
+    }
     
     // Try different regional endpoints
     const endpoints = [
