@@ -2,58 +2,107 @@ import { BaseMessage, BaseMessageLike } from "@langchain/core/messages";
 import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 
 /**
- * A graph's StateAnnotation defines three main things:
- * 1. The structure of the data to be passed between nodes (which "channels" to read from/write to and their types)
- * 2. Default values for each field
- * 3. Reducers for the state's. Reducers are functions that determine how to apply updates to the state.
- * See [Reducers](https://langchain-ai.github.io/langgraphjs/concepts/low_level/#reducers) for more information.
+ * Fashion Agent State - defines the structure for fashion creative generation
  */
 
-// This is the primary state of your agent, where you can store any information
+// Profile interface for customer data
+export interface Profile {
+  contact_id: string;
+  email: string;
+  firstname: string;
+  locale: string;
+  country: string;
+  city: string;
+  tags: string[];
+  interest_keywords: string[];
+}
+
+// Product interface for fashion items
+export interface Product {
+  sku: string;
+  title: string;
+  category: 'hoodies' | 'sneakers' | 'outerwear' | 'denim' | 'accessories' | 'dresses' | 'tops' | 'bottoms' | 'handbag';
+  colorways: string[];
+  price_band: 'value' | 'mid' | 'premium' | 'luxury';
+  launch_type: 'drop' | 'evergreen' | 'sale';
+  brand_name: string;
+}
+
+// Persona types
+export type PersonaType = 'Streetwear' | 'Minimalist' | 'LuxuryClassic' | 'Athleisure';
+
+// Options for creative generation
+export interface Options {
+  aspect: '1:1' | '4:5' | '9:16';
+  channel: 'instagram_feed' | 'instagram_story' | 'email' | 'web_banner';
+  fallback_image_url: string;
+  ab_variant: 'A' | 'B' | 'C';
+}
+
+// Generated creative content
+export interface CreativeContent {
+  image_url?: string;
+  copy: {
+    subject?: string;
+    body?: string;
+  };
+  persona: PersonaType;
+  color_palette: string[];
+  bfl_prompt?: string;
+  polling_url?: string;
+  request_id?: string;
+}
+
+// Error handling
+export interface ErrorState {
+  error?: string;
+  retry_count: number;
+}
+
 export const StateAnnotation = Annotation.Root({
-  /**
-   * Messages track the primary execution state of the agent.
-   *
-   * Typically accumulates a pattern of:
-   *
-   * 1. HumanMessage - user input
-   * 2. AIMessage with .tool_calls - agent picking tool(s) to use to collect
-   *     information
-   * 3. ToolMessage(s) - the responses (or errors) from the executed tools
-   *
-   *     (... repeat steps 2 and 3 as needed ...)
-   * 4. AIMessage without .tool_calls - agent responding in unstructured
-   *     format to the user.
-   *
-   * 5. HumanMessage - user responds with the next conversational turn.
-   *
-   *     (... repeat steps 2-5 as needed ... )
-   *
-   * Merges two lists of messages or message-like objects with role and content,
-   * updating existing messages by ID.
-   *
-   * Message-like objects are automatically coerced by `messagesStateReducer` into
-   * LangChain message classes. If a message does not have a given id,
-   * LangGraph will automatically assign one.
-   *
-   * By default, this ensures the state is "append-only", unless the
-   * new message has the same ID as an existing message.
-   *
-   * Returns:
-   *     A new list of messages with the messages from \`right\` merged into \`left\`.
-   *     If a message in \`right\` has the same ID as a message in \`left\`, the
-   *     message from \`right\` will replace the message from \`left\`.`
-   */
+  // Messages for conversation flow
   messages: Annotation<BaseMessage[], BaseMessageLike[]>({
     reducer: messagesStateReducer,
     default: () => [],
   }),
-  /**
-   * Feel free to add additional attributes to your state as needed.
-   * Common examples include retrieved documents, extracted entities, API connections, etc.
-   *
-   * For simple fields whose value should be overwritten by the return value of a node,
-   * you don't need to define a reducer or default.
-   */
-  // additionalField: Annotation<string>,
+  
+  // Input data
+  profile: Annotation<Profile | null>({
+    value: (left, right) => right ?? left,
+    default: () => null,
+  }),
+  
+  product: Annotation<Product | null>({
+    value: (left, right) => right ?? left,
+    default: () => null,
+  }),
+  
+  options: Annotation<Options | null>({
+    value: (left, right) => right ?? left,
+    default: () => null,
+  }),
+  
+  // Generated content
+  creative: Annotation<CreativeContent | null>({
+    value: (left, right) => right ?? left,
+    default: () => null,
+  }),
+  
+  // Persona inference
+  persona: Annotation<PersonaType | null>({
+    value: (left, right) => right ?? left,
+    default: () => null,
+  }),
+  
+  // Error handling
+  error: Annotation<ErrorState | null>({
+    value: (left, right) => right ?? left,
+    default: () => null,
+  }),
+  
+  // Processing status
+  status: Annotation<string>({
+    value: (left, right) => right ?? left,
+    default: () => 'pending',
+  }),
 });
